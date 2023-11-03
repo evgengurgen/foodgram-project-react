@@ -13,7 +13,7 @@ class Recipe(models.Model):
         help_text='Автор рецепта',
         blank=False
     )
-    title = models.CharField(
+    name = models.CharField(
         max_length=200,
         verbose_name='Название',
         help_text='Название рецепта',
@@ -25,7 +25,7 @@ class Recipe(models.Model):
         help_text='Картинка рецепта',
         blank=False
     )
-    description = models.TextField(
+    text = models.TextField(
         verbose_name='Описание',
         help_text='Описание рецепта',
         blank=False
@@ -50,6 +50,18 @@ class Recipe(models.Model):
         default=0,
         blank=False
     )
+    is_favorited = models.BooleanField(
+        verbose_name='В избранном',
+        help_text='Добавлен ли рецепт в избранное',
+        default=False,
+        blank=False
+    )
+    is_in_shopping_cart = models.BooleanField(
+        verbose_name='В корзине',
+        help_text='Добавлен ли рецепт в корзину',
+        default=False,
+        blank=False
+    )
 
     class Meta:
         verbose_name = 'Рецепт'
@@ -60,7 +72,7 @@ class Recipe(models.Model):
 
 
 class Tag(models.Model):
-    title = models.CharField(
+    name = models.CharField(
         max_length=200,
         verbose_name='Название',
         help_text='Название тега',
@@ -92,7 +104,7 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
-    title = models.CharField(
+    name = models.CharField(
         max_length=200,
         verbose_name='Название',
         help_text='Название ингредиента',
