@@ -6,6 +6,7 @@ from recipes.models import Recipe, Tag, Ingredient
 
 User = get_user_model()
 
+
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
@@ -26,7 +27,7 @@ class RecipeGetSerializer(serializers.ModelSerializer):
     ingredients = IngredientSerializer(
         many=True
         )
-    
+
     class Meta:
         model = Recipe
         fields = ('tags', 'author', 'ingredients', 'is_favorited',
@@ -45,7 +46,7 @@ class RecipeSerializer(serializers.ModelSerializer):
         queryset=Ingredient.objects.all(),
         slug_field='slug'
         )
-    
+
     class Meta:
         model = Recipe
         fields = ('ingredients', 'tags', 'image',

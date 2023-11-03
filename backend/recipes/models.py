@@ -33,14 +33,12 @@ class Recipe(models.Model):
     ingredients = models.ManyToManyField(
         'Ingredient',
         verbose_name='Ингредиенты',
-        through='RecipeIngredient',
         help_text='Ингредиенты рецепта',
         blank=False
     )
     tags = models.ManyToManyField(
         'Tag',
         verbose_name='Теги',
-        through='RecipeTag',
         help_text='Теги рецепта',
         blank=False
     )
