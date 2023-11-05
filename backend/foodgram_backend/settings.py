@@ -8,8 +8,9 @@ load_dotenv()
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 
+AUTH_USER_MODEL = 'users.MyUser'
 
-DEBUG = os.getenv('DEBUG_VALUE').upper() == 'TRUE'
+DEBUG = os.getenv('DEBUG_VALUE').lower() == 'true'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(',')
 
@@ -22,22 +23,29 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'corsheaders',
     'djoser',
     'django_filters',
     'api.apps.ApiConfig',
     'recipes.apps.RecipesConfig',
-    # 'users.apps.UsersConfig',
+    'users.apps.UsersConfig',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_URLS_REGEX = r'^/api/.*$'
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+] 
 
 ROOT_URLCONF = 'foodgram_backend.urls'
 
