@@ -1,7 +1,9 @@
 from django.urls import include, path
 from rest_framework import routers
+# from djoser.urls.authtoken
 
-from .views import IngredientViewSet, RecipeViewSet, TagViewSet
+from .views import (IngredientViewSet, RecipeViewSet,
+                    TagViewSet, UsersViewSet, TokenCreateView)
 
 router = routers.DefaultRouter()
 router.register(
@@ -19,19 +21,14 @@ router.register(
     IngredientViewSet,
     basename='ingredients'
 )
-'''router.register(
-    r'auth/signup',
-    UsersViewSet,
-    basename='signup'
-)
 router.register(
     r'users',
     UsersViewSet,
     basename='users'
-)'''
+)
 
 urlpatterns = [
-    # path('v1/users/me/', CurrentUserView.as_view()),
-    # path('v1/auth/token/', TokenView.as_view()),
-    path('v1/', include(router.urls)),
+    # path('auth/', include('djoser.urls.authtoken')),
+    path('auth/token/login/', TokenCreateView.as_view()),
+    path('', include(router.urls)),
 ]

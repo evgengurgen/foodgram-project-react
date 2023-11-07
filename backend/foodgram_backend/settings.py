@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from pathlib import Path
+import djoser.permissions
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -23,7 +24,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
-    'corsheaders',
     'djoser',
     'django_filters',
     'api.apps.ApiConfig',
@@ -34,18 +34,12 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-CORS_URLS_REGEX = r'^/api/.*$'
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-] 
 
 ROOT_URLCONF = 'foodgram_backend.urls'
 
@@ -87,7 +81,25 @@ DATABASES = {
 }'''
 
 REST_FRAMEWORK = {
-    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend']
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend'
+        ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+        ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        ]
+}
+
+DJOSER = {
+    'LOGIN_FIELD': 'email',
+    'SERIALIZERS': {
+        'user_create': 'api.serializers.UserSerializer',
+    },
+    'USER_AUTHENTICATION_RULES': [
+        'djoser.permissions.CurrentUserOrSuperuserPermission',
+    ]
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -105,7 +117,10 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-LANGUAGE_CODE = 'en-us'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media/recipes/images')
+MEDIA_URL = '/media/recipes/'
+
+LANGUAGE_CODE = 'ru-RU'
 
 TIME_ZONE = 'UTC'
 
@@ -116,3 +131,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+FILE_NAME = 'shopping_list.txt'
+
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+
+EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
+
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"
