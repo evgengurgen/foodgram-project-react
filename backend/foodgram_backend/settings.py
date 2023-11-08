@@ -1,7 +1,7 @@
 import os
-from dotenv import load_dotenv
 from pathlib import Path
-import djoser.permissions
+
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -85,21 +85,11 @@ REST_FRAMEWORK = {
         'django_filters.rest_framework.DjangoFilterBackend'
         ],
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
         ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework.authentication.TokenAuthentication',
         ]
-}
-
-DJOSER = {
-    'LOGIN_FIELD': 'email',
-    'SERIALIZERS': {
-        'user_create': 'api.serializers.UserSerializer',
-    },
-    'USER_AUTHENTICATION_RULES': [
-        'djoser.permissions.CurrentUserOrSuperuserPermission',
-    ]
 }
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -133,9 +123,3 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 FILE_NAME = 'shopping_list.txt'
-
-EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-
-EMAIL_FILE_PATH = BASE_DIR / 'sent_emails'
-
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"

@@ -1,24 +1,19 @@
 from django.contrib.auth import get_user_model
-from django_filters.rest_framework import DjangoFilterBackend
 from django.shortcuts import get_object_or_404
-from rest_framework.permissions import SAFE_METHODS
-import rest_framework
-from rest_framework import generics, status, viewsets
-from rest_framework.response import Response
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
+from rest_framework.response import Response
 
-
-from djoser import utils
-from djoser.conf import settings
+from recipes.models import Ingredient, Recipe, Tag
+from users.models import Subscription
 
 from .paginatiors import ResponsePaginator
-from .serializers import (TagSerializer, IngredientSerializer,
-                          RecipeSerializer, RecipeGetSerializer,
-                          UserGetSerializer, UserSerializer,
-                          SubscriptionsSerializer)
-from recipes.models import Tag, Ingredient, Recipe
-from users.models import Subscription
+from .serializers import (IngredientSerializer, RecipeGetSerializer,
+                          RecipeSerializer, SubscriptionsGetSerializer,
+                          SubscriptionsSerializer, TagSerializer,
+                          UserGetSerializer, UserSerializer)
 
 User = get_user_model()
 
@@ -51,6 +46,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
 class UsersViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
+    permission_classes = (AllowAny,)
     pagination_class = ResponsePaginator
     lookup_field = 'id'
 
@@ -59,16 +55,24 @@ class UsersViewSet(viewsets.ModelViewSet):
             return UserGetSerializer
         return UserSerializer
 
+    @action(detail=False, methods=['get'],
+            permission_classes=(IsAuthenticated,),
+            pagination_class=None)
     def me(self, request):
-        return UserGetSerializer(request.user).data
+        return Response(UserGetSerializer(request.user).data)
 
     @action(detail=False, methods=['get'],
             permission_classes=(IsAuthenticated,),
             pagination_class=ResponsePaginator)
     def subscriptions(self, request):
-        return UserGetSerializer(
-            request.user.subscribers.all(), many=True).data
+        subscribers = User.objects.filter(
+            following__user=request.user).all()
+        page = self.paginate_queryset(subscribers)
+        serializer = SubscriptionsGetSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
 
+    @action(detail=False, methods=['post'],
+            permission_classes=(IsAuthenticated,))
     def set_password(self, request):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -77,8 +81,10 @@ class UsersViewSet(viewsets.ModelViewSet):
         user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @action(detail=True, methods=['post', 'delete'],
+            permission_classes=(IsAuthenticated,))
     def subscribe(self, request, **kwargs):
-        author = get_object_or_404(User, id=kwargs['pk'])
+        author = get_object_or_404(User, id=kwargs['id'])
 
         if request.method == 'POST':
             serializer = SubscriptionsSerializer(
@@ -91,19 +97,6 @@ class UsersViewSet(viewsets.ModelViewSet):
         if request.method == 'DELETE':
             get_object_or_404(Subscription, user=request.user,
                               author=author).delete()
-            return Response({'detail': 'Успешная отписка'},
-                            status=status.HTTP_204_NO_CONTENT)
-
-
-class TokenCreateView(utils.ActionViewMixin, generics.GenericAPIView):
-    """Use this endpoint to obtain user authentication token."""
-
-    serializer_class = settings.SERIALIZERS.token_create
-    permission_classes = (rest_framework.permissions.AllowAny,)
-
-    def _action(self, serializer):
-        token = utils.login_user(self.request, serializer.user)
-        token_serializer_class = settings.SERIALIZERS.token
-        return Response(
-            data=token_serializer_class(token).data, status=status.HTTP_200_OK
-        )
+            return Response(
+                {'detail': 'Вы отписались от автора: ' + author.email},
+                status=status.HTTP_204_NO_CONTENT)

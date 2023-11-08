@@ -7,14 +7,6 @@ class MyUser(AbstractUser):
         unique=True,
         verbose_name='Адрес электронной почты'
     )
-    first_name = models.CharField(
-        max_length=150,
-        verbose_name='Имя'
-    )
-    last_name = models.CharField(
-        max_length=150,
-        verbose_name='Фамилия'
-    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
@@ -23,9 +15,6 @@ class MyUser(AbstractUser):
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
         ordering = ('id',)
-        permissions = [
-            ('view_token', 'Can view token'),
-        ]
 
     def __str__(self):
         return self.email

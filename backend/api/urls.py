@@ -1,9 +1,7 @@
 from django.urls import include, path
 from rest_framework import routers
-# from djoser.urls.authtoken
 
-from .views import (IngredientViewSet, RecipeViewSet,
-                    TagViewSet, UsersViewSet, TokenCreateView)
+from .views import IngredientViewSet, RecipeViewSet, TagViewSet, UsersViewSet
 
 router = routers.DefaultRouter()
 router.register(
@@ -28,7 +26,6 @@ router.register(
 )
 
 urlpatterns = [
-    # path('auth/', include('djoser.urls.authtoken')),
-    path('auth/token/login/', TokenCreateView.as_view()),
+    path('auth/', include('djoser.urls.authtoken')),
     path('', include(router.urls)),
 ]

@@ -1,5 +1,5 @@
-from django.core.validators import MinValueValidator
 from django.contrib.auth import get_user_model
+from django.core.validators import MinValueValidator
 from django.db import models
 
 User = get_user_model()
@@ -108,7 +108,6 @@ class Ingredient(models.Model):
         max_length=200,
         verbose_name='Название',
         help_text='Название ингредиента',
-        unique=True,
         blank=False
     )
     amount = models.CharField(
