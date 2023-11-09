@@ -97,6 +97,11 @@ class Ingredient(models.Model):
         help_text='Единица измерения ингредиента',
         blank=False
     )
+    amount = models.IntegerField(
+        verbose_name='Колличество',
+        help_text='Колличество ингредиента',
+        blank=False
+    )
 
     class Meta:
         verbose_name = 'Ингредиент'

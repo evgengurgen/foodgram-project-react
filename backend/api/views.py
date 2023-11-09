@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-from django.db.models import Sum
+from django.db.models import Sum, Exists, OuterRef, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -9,13 +9,12 @@ from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from recipes.models import (Ingredient, Recipe, Tag,
-                            ShoppingCart, Favorite)
+                            ShoppingCart, Favorite, RecipeIngredient)
 from users.models import Subscription
 
 from .paginatiors import ResponsePaginator
 from .serializers import (IngredientSerializer, RecipeGetSerializer,
-                          RecipeSerializer, RecipeIngredientSerializer,
-                          SubscriptionsGetSerializer,
+                          RecipeSerializer, SubscriptionsGetSerializer,
                           SubscriptionsSerializer, TagSerializer,
                           UserGetSerializer, UserSerializer)
 
@@ -40,6 +39,24 @@ class RecipeViewSet(viewsets.ModelViewSet):
     pagination_class = ResponsePaginator
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('author', 'tags')
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return Recipe.objects.annotate(
+                ingredients=Exists(RecipeIngredient.objects.filter(
+                    recipe=OuterRef('id'))),
+                is_favorited=Exists(
+                    Favorite.objects.filter(
+                        user=self.request.user,
+                        recipe=OuterRef('id'))),
+                is_in_shopping_cart=Exists(
+                    ShoppingCart.objects.filter(
+                        user=self.request.user,
+                        recipe=OuterRef('id')))
+            ).select_related('author')
+        return Recipe.objects.annotate(
+            is_favorited=Value(False),
+            is_in_shopping_cart=Value(False))
 
     def create(self, request, *args, **kwargs):
         serializer = RecipeSerializer(data=request.data)
@@ -101,6 +118,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.request.method in SAFE_METHODS:
             return RecipeGetSerializer
         return RecipeSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
 
 
 class UsersViewSet(viewsets.ModelViewSet):

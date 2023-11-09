@@ -116,10 +116,15 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
-    id = serializers.ReadOnlyField(source='ingredient.id')
-    name = serializers.ReadOnlyField(source='ingredient.name')
-    measurement_unit = serializers.ReadOnlyField(
-        source='ingredient.measurement_unit')
+    id = IngredientSerializer(
+        read_only=True,
+        source='ingredient')
+    name = IngredientSerializer(
+        read_only=True,
+        source='ingredient')
+    measurement_unit = IngredientSerializer(
+        read_only=True,
+        source='ingredient')
 
     class Meta:
         model = RecipeIngredient
@@ -140,7 +145,9 @@ class RecipeGetSerializer(serializers.ModelSerializer):
         read_only=True
         )
     ingredients = RecipeIngredientSerializer(
-        many=True
+        many=True,
+        read_only=True,
+        source='recipeingredient'
         )
     author = UserGetSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
@@ -179,6 +186,10 @@ class RecipeSerializer(serializers.ModelSerializer):
         slug_field='slug'
         )
     ingredients = RecipeIngredientCreateSerializer(many=True)
+    amount = RecipeIngredientCreateSerializer(
+        many=True,
+        source='recipeingredient'
+        )
     image = Base64ImageField()
 
     def create(self, validated_data):
