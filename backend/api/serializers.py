@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.db import transaction
 from drf_base64.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
@@ -116,15 +115,24 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
-    id = IngredientSerializer(
-        read_only=True,
-        source='ingredient')
-    name = IngredientSerializer(
-        read_only=True,
-        source='ingredient')
-    measurement_unit = IngredientSerializer(
-        read_only=True,
-        source='ingredient')
+    id = serializers.SerializerMethodField()
+    name = serializers.SerializerMethodField()
+    measurement_unit = serializers.SerializerMethodField()
+    amount = serializers.SerializerMethodField()
+
+    def get_name(self, obj):
+        return obj.ingredient.name
+
+    def get_id(self, obj):
+        return obj.ingredient.id
+
+    def get_measurement_unit(self, obj):
+        return obj.ingredient.measurement_unit
+
+    def get_amount(self, obj):
+        return RecipeIngredient.objects.get(
+            ingredient=obj.ingredient,
+            recipe_id=self.context.get('recipe_id')).amount
 
     class Meta:
         model = RecipeIngredient
@@ -144,11 +152,7 @@ class RecipeGetSerializer(serializers.ModelSerializer):
         many=True,
         read_only=True
         )
-    ingredients = RecipeIngredientSerializer(
-        many=True,
-        read_only=True,
-        source='recipeingredient'
-        )
+    ingredients = serializers.SerializerMethodField()
     author = UserGetSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -171,6 +175,13 @@ class RecipeGetSerializer(serializers.ModelSerializer):
                 recipe=obj
                 ).exists()
         return False
+
+    def get_ingredients(self, obj):
+        recipe_ingredients = RecipeIngredient.objects.filter(recipe=obj)
+        serializer = RecipeIngredientSerializer(
+            recipe_ingredients, many=True,
+            context={'recipe_id': obj.id})
+        return serializer.data
 
     class Meta:
         model = Recipe

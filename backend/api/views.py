@@ -9,7 +9,7 @@ from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from recipes.models import (Ingredient, Recipe, Tag,
-                            ShoppingCart, Favorite, RecipeIngredient)
+                            ShoppingCart, Favorite)
 from users.models import Subscription
 
 from .paginatiors import ResponsePaginator
@@ -43,8 +43,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.user.is_authenticated:
             return Recipe.objects.annotate(
-                ingredients=Exists(RecipeIngredient.objects.filter(
-                    recipe=OuterRef('id'))),
                 is_favorited=Exists(
                     Favorite.objects.filter(
                         user=self.request.user,

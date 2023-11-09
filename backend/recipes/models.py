@@ -42,6 +42,13 @@ class Recipe(models.Model):
         default=0,
         blank=False
     )
+    ingredients = models.ManyToManyField(
+        'Ingredient',
+        through='RecipeIngredient',
+        verbose_name='Ингредиенты',
+        help_text='Ингредиенты рецепта',
+        blank=False
+    )
 
     class Meta:
         verbose_name = 'Рецепт'
@@ -95,11 +102,6 @@ class Ingredient(models.Model):
         max_length=200,
         verbose_name='Единица измерения',
         help_text='Единица измерения ингредиента',
-        blank=False
-    )
-    amount = models.IntegerField(
-        verbose_name='Колличество',
-        help_text='Колличество ингредиента',
         blank=False
     )
 
