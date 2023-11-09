@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
 from django.db import models
 
 User = get_user_model()
@@ -12,8 +11,7 @@ class Recipe(models.Model):
         related_name='recipes',
         verbose_name='Автор',
         help_text='Автор рецепта',
-        blank=False,
-        default=1
+        blank=False
     )
     name = models.CharField(
         max_length=200,
@@ -32,12 +30,6 @@ class Recipe(models.Model):
         help_text='Описание рецепта',
         blank=False
     )
-    ingredients = models.ManyToManyField(
-        'Ingredient',
-        verbose_name='Ингредиенты',
-        help_text='Ингредиенты рецепта',
-        blank=False
-    )
     tags = models.ManyToManyField(
         'Tag',
         verbose_name='Теги',
@@ -50,25 +42,13 @@ class Recipe(models.Model):
         default=0,
         blank=False
     )
-    is_favorited = models.BooleanField(
-        verbose_name='В избранном',
-        help_text='Добавлен ли рецепт в избранное',
-        default=False,
-        blank=False
-    )
-    is_in_shopping_cart = models.BooleanField(
-        verbose_name='В корзине',
-        help_text='Добавлен ли рецепт в корзину',
-        default=False,
-        blank=False
-    )
 
     class Meta:
         verbose_name = 'Рецепт'
         verbose_name_plural = 'Рецепты'
 
     def __str__(self):
-        return self.title
+        return self.name
 
 
 class Tag(models.Model):
@@ -108,12 +88,7 @@ class Ingredient(models.Model):
         max_length=200,
         verbose_name='Название',
         help_text='Название ингредиента',
-        blank=False
-    )
-    amount = models.CharField(
-        max_length=200,
-        verbose_name='Колличество',
-        help_text='Колличество ингредиента',
+        unique=True,
         blank=False
     )
     measurement_unit = models.CharField(
@@ -131,39 +106,35 @@ class Ingredient(models.Model):
         return self.name
 
 
-class Recipe_ingredient(models.Model):
+class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(
         Recipe,
         on_delete=models.CASCADE,
-        related_name='recipes',
-        verbose_name='Рецепт'
+        related_name='recipe',
+        verbose_name='Рецепт',
+        help_text='Рецепт',
+        blank=False
     )
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
-        related_name='ingredients',
-        verbose_name='Ингредиент'
+        related_name='ingredient',
+        verbose_name='Ингредиент',
+        help_text='Ингредиент',
+        blank=False
     )
     amount = models.IntegerField(
-        'Количество',
-        validators=[MinValueValidator(1)]
+        verbose_name='Колличество',
+        help_text='Колличество ингредиента',
+        blank=False
     )
 
     class Meta:
-        verbose_name = 'Ингредиенты в рецепте'
-        verbose_name_plural = 'Ингредиенты в рецептах'
-        constraints = [
-            models.UniqueConstraint(
-                fields=['recipe', 'ingredient'],
-                name='unique_combination'
-            )
-        ]
+        verbose_name = 'Ингредиент'
+        verbose_name_plural = 'Ингредиенты'
 
     def __str__(self):
-        return (f'{self.recipe.name}: '
-                f'{self.ingredient.name} - '
-                f'{self.amount} '
-                f'{self.ingredient.measurement_unit}')
+        return (f'{self.ingredient}: {self.amount} {self.recipe}')
 
 
 class Favorite(models.Model):
@@ -194,7 +165,7 @@ class Favorite(models.Model):
         return f'{self.user.username} - {self.recipe.name}'
 
 
-class Shopping_cart(models.Model):
+class ShoppingCart(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -210,7 +181,7 @@ class Shopping_cart(models.Model):
 
     class Meta:
         verbose_name = 'Корзина'
-        verbose_name_plural = 'Корзина'
+        verbose_name_plural = 'Корзины'
         constraints = [
             models.UniqueConstraint(
                 fields=['user', 'recipe'],
