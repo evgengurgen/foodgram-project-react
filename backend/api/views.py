@@ -6,7 +6,8 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
+from rest_framework.permissions import (SAFE_METHODS, AllowAny,
+                                        IsAuthenticated, IsAdminUser)
 from rest_framework.response import Response
 
 from recipes.models import (Ingredient, Recipe, Tag,
@@ -14,6 +15,8 @@ from recipes.models import (Ingredient, Recipe, Tag,
 from users.models import Subscription
 
 from .paginatiors import ResponsePaginator
+from .permissions import (IsAuthor, IsCurrentUser,
+                          IsCurrentUserOrAdmin, IsBlockedUser)
 from .serializers import (IngredientSerializer, RecipeGetSerializer,
                           RecipeSerializer, SubscriptionsGetSerializer,
                           SubscriptionsSerializer, TagSerializer,
@@ -22,25 +25,37 @@ from .serializers import (IngredientSerializer, RecipeGetSerializer,
 
 User = get_user_model()
 
+USER_ONLY_METHODS = ('create', 'update', 'partial_update', 'destroy')
+
 
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    lookup_field = 'id'
+
+    def get_permissions(self):
+        if self.request.method in SAFE_METHODS:
+            return (AllowAny(),)
+        return (IsAdminUser(),)
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     pagination_class = ResponsePaginator
-    lookup_field = 'id'
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('name',)
+
+    def get_permissions(self):
+        if self.request.method in SAFE_METHODS:
+            return (AllowAny(),)
+        return (IsAdminUser(),)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = ResponsePaginator
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('author', 'tags')
+    filterset_fields = ('author', 'name', 'tags')
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
@@ -66,7 +81,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post', 'delete'],
-            permission_classes=(IsAuthenticated,))
+            permission_classes=(IsCurrentUser, IsBlockedUser))
     def favorite(self, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
         if request.method == 'POST':
@@ -78,8 +93,21 @@ class RecipeViewSet(viewsets.ModelViewSet):
         favorite.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @action(detail=False, methods=['get'],
+            permission_classes=(IsCurrentUser, IsBlockedUser))
+    def favorites(self, request, **kwargs):
+        favorites = Favorite.objects.filter(user=request.user)
+        recipe_ids = [favorite.recipe.id for favorite in favorites]
+        if recipe_ids:
+            recipes = Recipe.objects.filter(id__in=recipe_ids)
+        else:
+            recipes = Recipe.objects.none()
+        return Response(RecipeGetSerializer(recipes, many=True,
+                                            context={'request': request}).data,
+                        status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post', 'delete'],
-            permission_classes=(IsAuthenticated,))
+            permission_classes=(IsAuthenticated, IsBlockedUser))
     def shopping_cart(self, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
         if request.method == 'POST':
@@ -92,12 +120,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get'],
-            permission_classes=(IsAuthenticated,))
+            permission_classes=(IsCurrentUser, IsBlockedUser))
     def download_shopping_cart(self, request):
         carts = ShoppingCart.objects.filter(user=request.user)
         content = ""
         total_ingredients = {}
-        for cart in carts:
+        for cart in carts if carts else []:
             ingredients = cart.recipe.ingredients.values(
                 'id', 'name', 'measurement_unit'
             )
@@ -136,12 +164,24 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
+    def get_permissions(self):
+        if self.action in USER_ONLY_METHODS:
+            return (IsAuthor(),)
+        return super().get_permissions()
+
 
 class UsersViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     permission_classes = (AllowAny,)
     pagination_class = ResponsePaginator
-    lookup_field = 'id'
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('username', 'email')
+
+    def get_permissions(self):
+        if (self.request.method in SAFE_METHODS
+           and self.request.method == 'POST'):
+            return (AllowAny(),)
+        return (IsCurrentUserOrAdmin(), IsBlockedUser())
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
@@ -155,11 +195,11 @@ class UsersViewSet(viewsets.ModelViewSet):
         return Response(UserGetSerializer(request.user).data)
 
     @action(detail=True, methods=['post', 'delete'],
-            permission_classes=(IsAuthenticated,))
+            permission_classes=(IsAuthenticated, IsBlockedUser))
     def subscribe(self, request, **kwargs):
-        author = get_object_or_404(User, id=kwargs['id'])
+        author = get_object_or_404(User, id=kwargs['pk'])
 
-        if request.method == 'POST':
+        if request.method == 'POST' and author != request.user:
             serializer = SubscriptionsSerializer(
                 author, data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
@@ -174,8 +214,12 @@ class UsersViewSet(viewsets.ModelViewSet):
                 {'detail': 'Вы отписались от автора: ' + author.email},
                 status=status.HTTP_204_NO_CONTENT)
 
+        return Response(
+            {'detail': 'Нельзя подписаться на самого себя'},
+            status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
     @action(detail=False, methods=['get'],
-            permission_classes=(IsAuthenticated,),
+            permission_classes=(IsCurrentUserOrAdmin, IsBlockedUser),
             pagination_class=ResponsePaginator)
     def subscriptions(self, request):
         subscribers = User.objects.filter(
@@ -185,7 +229,7 @@ class UsersViewSet(viewsets.ModelViewSet):
         return self.get_paginated_response(serializer.data)
 
     @action(detail=False, methods=['post'],
-            permission_classes=(IsAuthenticated,))
+            permission_classes=(IsAuthenticated, IsBlockedUser))
     def set_password(self, request):
         serializer = SetPasswordSerializer(
             data=request.data,

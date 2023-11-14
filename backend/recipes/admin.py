@@ -7,9 +7,11 @@ from .models import (Ingredient, Recipe, Tag, RecipeIngredient,
 class RecipeIngredientInline(admin.TabularInline):
     model = RecipeIngredient
 
+
 class FavoriteInline(admin.TabularInline):
     model = Favorite
     extra = 1
+
 
 class ShoppingCartInline(admin.TabularInline):
     model = ShoppingCart
@@ -28,7 +30,7 @@ class RecipeAdmin(admin.ModelAdmin):
         'cooking_time',
     )
     search_fields = ('name',)
-    list_filter = ('author',)
+    list_filter = ('author', 'name')
 
 
 @admin.register(Tag)
@@ -40,7 +42,6 @@ class TagAdmin(admin.ModelAdmin):
         'slug',
     )
     search_fields = ('name',)
-    list_filter = ('name',)
 
 
 @admin.register(Ingredient)

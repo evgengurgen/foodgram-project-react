@@ -11,9 +11,18 @@ admin.site.unregister(Token)
 
 @admin.register(MyUser)
 class MyUserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'email', 'first_name', 'last_name')
+    list_display = ('username', 'email',
+                    'first_name', 'last_name', 'is_blocked')
+    list_filter = ('email', 'username')
 
     def save_model(self, request, obj, form, change):
         if 'password' in form.changed_data:
             obj.set_password(form.cleaned_data['password'])
         super().save_model(request, obj, form, change)
+
+    def block_user(self, request, queryset):
+        for user in queryset:
+            user.is_blocked = True
+            user.save()
+
+    actions = [block_user]

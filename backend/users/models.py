@@ -7,6 +7,11 @@ class MyUser(AbstractUser):
         unique=True,
         verbose_name='Адрес электронной почты'
     )
+    is_blocked = models.BooleanField(
+        default=False,
+        verbose_name='Блокировка',
+        help_text='Заблокирован ли пользователь'
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
