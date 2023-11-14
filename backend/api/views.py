@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+import io
 from django.db.models import Sum, Exists, OuterRef, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -9,14 +10,15 @@ from rest_framework.permissions import SAFE_METHODS, AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from recipes.models import (Ingredient, Recipe, Tag,
-                            ShoppingCart, Favorite)
+                            ShoppingCart, Favorite, RecipeIngredient)
 from users.models import Subscription
 
 from .paginatiors import ResponsePaginator
 from .serializers import (IngredientSerializer, RecipeGetSerializer,
                           RecipeSerializer, SubscriptionsGetSerializer,
                           SubscriptionsSerializer, TagSerializer,
-                          UserGetSerializer, UserSerializer)
+                          UserGetSerializer, UserSerializer,
+                          SetPasswordSerializer)
 
 User = get_user_model()
 
@@ -66,7 +68,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=(IsAuthenticated,))
     def favorite(self, request, **kwargs):
-        recipe = get_object_or_404(Recipe, id=kwargs['id'])
+        recipe = get_object_or_404(Recipe, id=kwargs['pk'])
         if request.method == 'POST':
             favorite = Favorite(user=request.user, recipe=recipe)
             favorite.save()
@@ -79,7 +81,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=(IsAuthenticated,))
     def shopping_cart(self, request, **kwargs):
-        recipe = get_object_or_404(Recipe, id=kwargs['id'])
+        recipe = get_object_or_404(Recipe, id=kwargs['pk'])
         if request.method == 'POST':
             shopping_cart = ShoppingCart(user=request.user, recipe=recipe)
             shopping_cart.save()
@@ -92,23 +94,37 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'],
             permission_classes=(IsAuthenticated,))
     def download_shopping_cart(self, request):
-        ingredients = Ingredient.objects.filter(
-            recipe__shopping_cart__user=request.user
-        ).values(
-            'name',
-            'measurement_unit'
-        ).annotate(amount=Sum('recipe__shopping_cart__amount'))
-
+        carts = ShoppingCart.objects.filter(user=request.user)
         content = ""
-        for ingredient in ingredients:
-            name = ingredient['name']
-            amount = ingredient['amount']
-            measurement_unit = ingredient['measurement_unit']
-            content += f"{name}: {amount} {measurement_unit}/n"
+        total_ingredients = {}
+        for cart in carts:
+            ingredients = cart.recipe.ingredients.values(
+                'id', 'name', 'measurement_unit'
+            )
+            for ingredient in ingredients:
+                name = ingredient['name']
+                amount = RecipeIngredient.objects.filter(
+                    recipe=cart.recipe, ingredient=ingredient['id']
+                ).aggregate(Sum('amount'))['amount__sum']
+                measurement_unit = ingredient['measurement_unit']
+                if name not in total_ingredients:
+                    total_ingredients[name] = (amount, measurement_unit)
+                else:
+                    total_amount, measurement_unit = total_ingredients[name]
+                    total_amount += amount
+                    total_ingredients[name] = (total_amount, measurement_unit)
 
-        response = HttpResponse(content, content_type='text/plain')
-        response['Content-Disposition'] = ('attachment; '
-                                           'filename="shopping_cart.txt"')
+        for name, (amount, measurement_unit) in total_ingredients.items():
+            content += f'{name}: {amount} {measurement_unit}\n'
+
+        file_path = f'media/recipes/{request.user.email}_shopping_cart.txt'
+        with io.open(file_path, 'w', encoding='utf-8') as file:
+            file.write(content)
+
+        with open(file_path, 'rb') as file:
+            response = HttpResponse(file.read(), content_type='text/plain')
+            response['Content-Disposition'] = ('attachment; '
+                                               'filename="shopping_cart.txt"')
 
         return response
 
@@ -171,9 +187,8 @@ class UsersViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'],
             permission_classes=(IsAuthenticated,))
     def set_password(self, request):
-        serializer = self.get_serializer(data=request.data)
+        serializer = SetPasswordSerializer(
+            data=request.data,
+            context={'request': request})
         serializer.is_valid(raise_exception=True)
-        user = serializer.user
-        user.set_password(serializer.data["new_password"])
-        user.save()
         return Response(status=status.HTTP_204_NO_CONTENT)

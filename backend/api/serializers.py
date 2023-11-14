@@ -1,7 +1,6 @@
 from django.contrib.auth import get_user_model
 from drf_base64.fields import Base64ImageField
 from rest_framework import serializers
-from rest_framework.relations import SlugRelatedField
 
 from recipes.models import (Ingredient, Recipe, Tag,
                             RecipeIngredient, Favorite, ShoppingCart)
@@ -28,6 +27,14 @@ class UserGetSerializer(serializers.ModelSerializer):
         return False
 
 
+class UserShowCreateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+        fields = ('email', 'id',  'username', 'first_name',
+                  'last_name')
+
+
 class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -36,13 +43,39 @@ class UserSerializer(serializers.ModelSerializer):
                   'last_name')
 
     def to_representation(self, instance):
-        return UserGetSerializer(instance).data
+        return UserShowCreateSerializer(instance).data
 
     def create(self, validated_data):
         user = super().create(validated_data)
         user.set_password(validated_data['password'])
         user.save()
         return user
+
+
+class SetPasswordSerializer(serializers.Serializer):
+    current_password = serializers.CharField()
+    new_password = serializers.CharField()
+
+    class Meta:
+        model = User
+        fields = ('new_password', 'current_password')
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        if not user.is_authenticated:
+            raise serializers.ValidationError(
+                'Учетные данные не были предоставлены.'
+                )
+
+        current_password = attrs.get('current_password')
+        if not user.check_password(current_password):
+            raise serializers.ValidationError('Неверный текущий пароль')
+
+        new_password = attrs.get('new_password')
+        user.set_password(new_password)
+        user.save()
+
+        return attrs
 
 
 class SubscriptionsGetSerializer(serializers.ModelSerializer):
@@ -98,7 +131,9 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
 
     def get_recipes(self, obj):
         recipes = obj.recipes.all()[:3]
-        serializer = RecipeSerializer(recipes, many=True, read_only=True)
+        serializer = SubscribersRecipeSerializer(
+            recipes, many=True, read_only=True
+            )
         return serializer.data
 
 
@@ -130,21 +165,11 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
         return obj.ingredient.measurement_unit
 
     def get_amount(self, obj):
-        return RecipeIngredient.objects.get(
-            ingredient=obj.ingredient,
-            recipe_id=self.context.get('recipe_id')).amount
+        return obj.amount
 
     class Meta:
         model = RecipeIngredient
         fields = ('id', 'name', 'measurement_unit', 'amount')
-
-
-class RecipeIngredientCreateSerializer(serializers.ModelSerializer):
-    id = serializers.IntegerField()
-
-    class Meta:
-        model = RecipeIngredient
-        fields = ('id', 'amount')
 
 
 class RecipeGetSerializer(serializers.ModelSerializer):
@@ -190,32 +215,73 @@ class RecipeGetSerializer(serializers.ModelSerializer):
                   'text', 'cooking_time')
 
 
-class RecipeSerializer(serializers.ModelSerializer):
-    tags = SlugRelatedField(
-        many=True,
-        queryset=Tag.objects.all(),
-        slug_field='slug'
-        )
-    ingredients = RecipeIngredientCreateSerializer(many=True)
-    amount = RecipeIngredientCreateSerializer(
-        many=True,
-        source='recipeingredient'
-        )
-    image = Base64ImageField()
+class RecipeSerializer(serializers.Serializer):
+    ingredients = serializers.ListField(
+        child=serializers.DictField(
+            child=serializers.IntegerField(),
+            allow_empty=False
+        ),
+        allow_empty=False
+    )
+    tags = serializers.ListField(
+        child=serializers.IntegerField(),
+        allow_empty=False
+    )
+    image = serializers.CharField()
+    name = serializers.CharField()
+    text = serializers.CharField()
+    cooking_time = serializers.IntegerField()
 
     def create(self, validated_data):
+        ingredients_ids = []
         tags = validated_data.pop('tags')
+        ingredients_data = validated_data.pop('ingredients')
         recipe = Recipe.objects.create(**validated_data)
-        for ingredient in self.initial_data.get('ingredients'):
-            RecipeIngredient.objects.create(recipe=recipe,
-                                            **ingredient)
+        for ingredient_data in ingredients_data:
+            ingredient_id = ingredient_data.get('id')
+            ingredients_ids.append(ingredient_id)
+            ingredient = Ingredient.objects.get(id=ingredient_id)
+            RecipeIngredient.objects.create(
+                recipe=recipe,
+                ingredient=ingredient,
+                amount=ingredient_data.get('amount')
+                )
+        recipe.ingredients.set(ingredients_ids)
         recipe.tags.set(tags)
         return recipe
+
+    def update(self, instance, validated_data):
+        ingredients_ids = []
+        tags = validated_data.pop('tags')
+        ingredients_data = validated_data.pop('ingredients')
+        instance.tags.set(tags)
+        instance.ingredients.clear()
+        for ingredient_data in ingredients_data:
+            ingredient_id = ingredient_data.get('id')
+            ingredients_ids.append(ingredient_id)
+            ingredient = Ingredient.objects.get(id=ingredient_id)
+            RecipeIngredient.objects.create(
+                recipe=instance,
+                ingredient=ingredient,
+                amount=ingredient_data.get('amount')
+                )
+        instance.ingredients.set(ingredients_ids)
+        instance.name = validated_data.get('name', instance.name)
+        instance.text = validated_data.get('text', instance.text)
+        instance.cooking_time = validated_data.get(
+            'cooking_time', instance.cooking_time
+            )
+        instance.image = validated_data.get('image', instance.image)
+        instance.save()
+        return instance
+
+    def to_representation(self, instance):
+        return RecipeGetSerializer(instance).data
 
     class Meta:
         model = Recipe
         fields = ('ingredients', 'tags', 'image',
-                  'name', 'text', 'cooking_time', 'amount')
+                  'name', 'text', 'cooking_time')
 
 
 class SubscribersRecipeSerializer(serializers.ModelSerializer):
