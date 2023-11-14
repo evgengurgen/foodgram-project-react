@@ -1,27 +1,27 @@
-from django.contrib.auth import get_user_model
 import io
-from django.db.models import Sum, Exists, OuterRef, Value
+
+from django.contrib.auth import get_user_model
+from django.db.models import Exists, OuterRef, Sum, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import (SAFE_METHODS, AllowAny,
-                                        IsAuthenticated, IsAdminUser)
+from rest_framework.permissions import (SAFE_METHODS, AllowAny, IsAdminUser,
+                                        IsAuthenticated)
 from rest_framework.response import Response
 
-from recipes.models import (Ingredient, Recipe, Tag,
-                            ShoppingCart, Favorite, RecipeIngredient)
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
 from users.models import Subscription
 
 from .paginatiors import ResponsePaginator
-from .permissions import (IsAuthor, IsCurrentUser,
-                          IsCurrentUserOrAdmin, IsBlockedUser)
+from .permissions import (IsAuthor, IsBlockedUser, IsCurrentUser,
+                          IsCurrentUserOrAdmin)
 from .serializers import (IngredientSerializer, RecipeGetSerializer,
-                          RecipeSerializer, SubscriptionsGetSerializer,
-                          SubscriptionsSerializer, TagSerializer,
-                          UserGetSerializer, UserSerializer,
-                          SetPasswordSerializer)
+                          RecipeSerializer, SetPasswordSerializer,
+                          SubscriptionsGetSerializer, SubscriptionsSerializer,
+                          TagSerializer, UserGetSerializer, UserSerializer)
 
 User = get_user_model()
 

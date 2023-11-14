@@ -2,8 +2,8 @@ from django.contrib.auth import get_user_model
 from drf_base64.fields import Base64ImageField
 from rest_framework import serializers
 
-from recipes.models import (Ingredient, Recipe, Tag,
-                            RecipeIngredient, Favorite, ShoppingCart)
+from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
+                            ShoppingCart, Tag)
 from users.models import Subscription
 
 User = get_user_model()
@@ -31,7 +31,7 @@ class UserShowCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'id',  'username', 'first_name',
+        fields = ('email', 'id', 'username', 'first_name',
                   'last_name')
 
 
@@ -39,7 +39,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ('email', 'id',  'password', 'username', 'first_name',
+        fields = ('email', 'id', 'password', 'username', 'first_name',
                   'last_name')
 
     def to_representation(self, instance):
@@ -65,7 +65,7 @@ class SetPasswordSerializer(serializers.Serializer):
         if not user.is_authenticated:
             raise serializers.ValidationError(
                 'Учетные данные не были предоставлены.'
-                )
+            )
 
         current_password = attrs.get('current_password')
         if not user.check_password(current_password):
@@ -133,7 +133,7 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
         recipes = obj.recipes.all()[:3]
         serializer = SubscribersRecipeSerializer(
             recipes, many=True, read_only=True
-            )
+        )
         return serializer.data
 
 
@@ -176,7 +176,7 @@ class RecipeGetSerializer(serializers.ModelSerializer):
     tags = TagSerializer(
         many=True,
         read_only=True
-        )
+    )
     ingredients = serializers.SerializerMethodField()
     author = UserGetSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
@@ -189,7 +189,7 @@ class RecipeGetSerializer(serializers.ModelSerializer):
             return Favorite.objects.filter(
                 user=self.context['request'].user,
                 recipe=obj
-                ).exists()
+            ).exists()
         return False
 
     def get_is_in_shopping_cart(self, obj):
@@ -198,7 +198,7 @@ class RecipeGetSerializer(serializers.ModelSerializer):
             return ShoppingCart.objects.filter(
                 user=self.context['request'].user,
                 recipe=obj
-                ).exists()
+            ).exists()
         return False
 
     def get_ingredients(self, obj):
@@ -245,7 +245,7 @@ class RecipeSerializer(serializers.Serializer):
                 recipe=recipe,
                 ingredient=ingredient,
                 amount=ingredient_data.get('amount')
-                )
+            )
         recipe.ingredients.set(ingredients_ids)
         recipe.tags.set(tags)
         return recipe
@@ -264,13 +264,13 @@ class RecipeSerializer(serializers.Serializer):
                 recipe=instance,
                 ingredient=ingredient,
                 amount=ingredient_data.get('amount')
-                )
+            )
         instance.ingredients.set(ingredients_ids)
         instance.name = validated_data.get('name', instance.name)
         instance.text = validated_data.get('text', instance.text)
         instance.cooking_time = validated_data.get(
             'cooking_time', instance.cooking_time
-            )
+        )
         instance.image = validated_data.get('image', instance.image)
         instance.save()
         return instance

@@ -4,7 +4,6 @@ from rest_framework.authtoken.models import TokenProxy as Token
 
 from .models import MyUser
 
-
 admin.site.unregister(Group)
 admin.site.unregister(Token)
 

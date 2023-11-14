@@ -1,12 +1,12 @@
 import csv
 import os
 
-from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
 from progress.bar import IncrementalBar
 
 from foodgram_backend import settings
-from recipes.models import Ingredient, Tag, Recipe, RecipeIngredient
+from recipes.models import Ingredient, Recipe, RecipeIngredient, Tag
 
 User = get_user_model()
 
