@@ -179,7 +179,7 @@ class UsersViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if (self.request.method in SAFE_METHODS
-           and self.request.method == 'POST'):
+           or self.request.method == 'POST'):
             return (AllowAny(),)
         return (IsCurrentUserOrAdmin(), IsBlockedUser())
 

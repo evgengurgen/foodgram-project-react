@@ -22,15 +22,16 @@ class ShoppingCartInline(admin.TabularInline):
 class RecipeAdmin(admin.ModelAdmin):
     inlines = (RecipeIngredientInline, FavoriteInline, ShoppingCartInline)
     list_display = (
-        'id',
         'name',
-        'author',
-        'text',
-        'image',
-        'cooking_time',
+        'author'
     )
-    search_fields = ('name',)
     list_filter = ('author', 'name')
+    readonly_fields = ['total_favorites']
+
+    def total_favorites(self, obj):
+        return Favorite.objects.filter(recipe=obj).count()
+
+    total_favorites.short_description = 'В избранном у'
 
 
 @admin.register(Tag)
@@ -41,15 +42,13 @@ class TagAdmin(admin.ModelAdmin):
         'color',
         'slug',
     )
-    search_fields = ('name',)
+    list_filter = ('name',)
 
 
 @admin.register(Ingredient)
 class IngredientAdmin(admin.ModelAdmin):
     list_display = (
-        'id',
         'name',
         'measurement_unit',
     )
-    search_fields = ('name',)
     list_filter = ('name',)
