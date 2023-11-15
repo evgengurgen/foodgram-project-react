@@ -19,7 +19,7 @@ class UserGetSerializer(serializers.ModelSerializer):
                   'is_subscribed')
 
     def get_is_subscribed(self, obj):
-        if (self.context.get('request').user.is_authenticated):
+        if (self.context['request'].user.is_authenticated):
             return obj.follower.filter(
                 user=self.context['request'].user
                 ).exists()
@@ -171,7 +171,7 @@ class RecipeGetSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
 
     def get_is_favorited(self, obj):
-        if (self.context.get('request').user.is_authenticated):
+        if (self.context['request'].user.is_authenticated):
             return Favorite.objects.filter(
                 user=self.context['request'].user,
                 recipe=obj
