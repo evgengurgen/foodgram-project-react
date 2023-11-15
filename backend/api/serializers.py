@@ -100,7 +100,7 @@ class SubscriptionsGetSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, obj):
         return obj.follower.filter(
-            user=self.context['request'].user
+            user=obj
             ).exists()
 
 
