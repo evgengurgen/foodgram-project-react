@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
 from users.models import Subscription, MyUser as User
+from .filters import RecipeFilter
 from .paginatiors import ResponsePaginator
 from .permissions import (IsAuthor, IsBlockedUser, UserPermissions,
                           IsCurrentUserOrAdmin, IsAdminOrReadOnly)
@@ -26,6 +27,8 @@ USER_ONLY_METHODS = ('create', 'update', 'partial_update', 'destroy')
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filterset_fields = ('slug',)
     permission_classes = (IsAdminOrReadOnly,)
 
 
@@ -33,8 +36,6 @@ class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     pagination_class = ResponsePaginator
-    filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('name',)
     permission_classes = (IsAdminOrReadOnly,)
 
 
@@ -42,7 +43,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     pagination_class = ResponsePaginator
     filter_backends = (DjangoFilterBackend,)
-    filterset_fields = ('author', 'name', 'tags')
+    filterset_class = RecipeFilter
 
     def get_queryset(self):
         if self.request.user.is_authenticated:
