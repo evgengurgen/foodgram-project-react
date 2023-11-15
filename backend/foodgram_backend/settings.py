@@ -107,8 +107,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media/recipes/images')
-MEDIA_URL = '/media/recipes/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'collected_static'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = '/media/'
 
 LANGUAGE_CODE = 'ru-RU'
 
