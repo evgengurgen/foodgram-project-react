@@ -19,11 +19,10 @@ class UserGetSerializer(serializers.ModelSerializer):
                   'is_subscribed')
 
     def get_is_subscribed(self, obj):
-        if (self.context.get('request')
-           and not self.context['request'].user.is_anonymous):
-            return Subscription.objects.filter(
-                user=self.context['request'].user,
-                author=obj).exists()
+        if (self.context.get('request').user.is_authenticated):
+            return obj.follower.filter(
+                user=self.context['request'].user
+                ).exists()
         return False
 
 
@@ -79,7 +78,7 @@ class SetPasswordSerializer(serializers.Serializer):
 
 
 class SubscriptionsGetSerializer(serializers.ModelSerializer):
-    is_subscribed = serializers.BooleanField(default=True)
+    is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
 
@@ -99,6 +98,11 @@ class SubscriptionsGetSerializer(serializers.ModelSerializer):
                                                  read_only=True)
         return serializer.data
 
+    def get_is_subscribed(self, obj):
+        return obj.follower.filter(
+            user=self.context['request'].user
+            ).exists()
+
 
 class SubscriptionsSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
@@ -113,12 +117,6 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
                   'username', 'first_name',
                   'last_name', 'is_subscribed',
                   'recipes', 'recipes_count')
-
-    def get_email(self, obj):
-        return obj.email
-
-    def get_username(self, obj):
-        return obj.username
 
     def get_is_subscribed(self, obj):
         return (
@@ -140,32 +138,21 @@ class SubscriptionsSerializer(serializers.ModelSerializer):
 class TagSerializer(serializers.ModelSerializer):
     class Meta:
         model = Tag
-        fields = ('id', 'name', 'color', 'slug')
+        fields = ('__all__')
 
 
 class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ingredient
-        fields = ('id', 'name', 'measurement_unit')
+        fields = ('__all__')
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
-    id = serializers.SerializerMethodField()
-    name = serializers.SerializerMethodField()
-    measurement_unit = serializers.SerializerMethodField()
-    amount = serializers.SerializerMethodField()
-
-    def get_name(self, obj):
-        return obj.ingredient.name
-
-    def get_id(self, obj):
-        return obj.ingredient.id
-
-    def get_measurement_unit(self, obj):
-        return obj.ingredient.measurement_unit
-
-    def get_amount(self, obj):
-        return obj.amount
+    id = serializers.ReadOnlyField(source='ingredient.id')
+    name = serializers.ReadOnlyField(source='ingredient.name')
+    measurement_unit = serializers.ReadOnlyField(
+        source='ingredient.measurement_unit')
+    amount = serializers.ReadOnlyField()
 
     class Meta:
         model = RecipeIngredient
@@ -184,8 +171,7 @@ class RecipeGetSerializer(serializers.ModelSerializer):
     image = Base64ImageField()
 
     def get_is_favorited(self, obj):
-        if (self.context.get('request')
-           and not self.context['request'].user.is_anonymous):
+        if (self.context.get('request').user.is_authenticated):
             return Favorite.objects.filter(
                 user=self.context['request'].user,
                 recipe=obj
@@ -227,10 +213,15 @@ class RecipeSerializer(serializers.Serializer):
         child=serializers.IntegerField(),
         allow_empty=False
     )
-    image = serializers.CharField()
+    image = Base64ImageField()
     name = serializers.CharField()
     text = serializers.CharField()
     cooking_time = serializers.IntegerField()
+
+    class Meta:
+        model = Recipe
+        fields = ('ingredients', 'tags', 'image',
+                  'name', 'text', 'cooking_time')
 
     def create(self, validated_data):
         ingredients_ids = []
@@ -277,11 +268,6 @@ class RecipeSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         return RecipeGetSerializer(instance).data
-
-    class Meta:
-        model = Recipe
-        fields = ('ingredients', 'tags', 'image',
-                  'name', 'text', 'cooking_time')
 
 
 class SubscribersRecipeSerializer(serializers.ModelSerializer):

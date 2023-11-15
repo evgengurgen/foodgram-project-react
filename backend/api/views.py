@@ -1,29 +1,24 @@
 import io
 
-from django.contrib.auth import get_user_model
 from django.db.models import Exists, OuterRef, Sum, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import (SAFE_METHODS, AllowAny, IsAdminUser,
-                                        IsAuthenticated)
+from rest_framework.permissions import (SAFE_METHODS, IsAuthenticated)
 from rest_framework.response import Response
 
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
-from users.models import Subscription
-
+from users.models import Subscription, MyUser as User
 from .paginatiors import ResponsePaginator
-from .permissions import (IsAuthor, IsBlockedUser, IsCurrentUser,
-                          IsCurrentUserOrAdmin)
+from .permissions import (IsAuthor, IsBlockedUser, UserPermissions,
+                          IsCurrentUserOrAdmin, IsAdminOrReadOnly)
 from .serializers import (IngredientSerializer, RecipeGetSerializer,
                           RecipeSerializer, SetPasswordSerializer,
                           SubscriptionsGetSerializer, SubscriptionsSerializer,
                           TagSerializer, UserGetSerializer, UserSerializer)
-
-User = get_user_model()
 
 USER_ONLY_METHODS = ('create', 'update', 'partial_update', 'destroy')
 
@@ -31,11 +26,7 @@ USER_ONLY_METHODS = ('create', 'update', 'partial_update', 'destroy')
 class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-
-    def get_permissions(self):
-        if self.request.method in SAFE_METHODS:
-            return (AllowAny(),)
-        return (IsAdminUser(),)
+    permission_classes = (IsAdminOrReadOnly,)
 
 
 class IngredientViewSet(viewsets.ModelViewSet):
@@ -44,11 +35,7 @@ class IngredientViewSet(viewsets.ModelViewSet):
     pagination_class = ResponsePaginator
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('name',)
-
-    def get_permissions(self):
-        if self.request.method in SAFE_METHODS:
-            return (AllowAny(),)
-        return (IsAdminUser(),)
+    permission_classes = (IsAdminOrReadOnly,)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -81,7 +68,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post', 'delete'],
-            permission_classes=(IsCurrentUser, IsBlockedUser))
+            permission_classes=(IsBlockedUser))
     def favorite(self, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
         if request.method == 'POST':
@@ -93,6 +80,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         favorite.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    # Да, лишний эндпоинт, согласно документации, но в ТЗ написано:
+    # 'Пользователь может получать страницу со списком своего избранного'.
+    '''
     @action(detail=False, methods=['get'],
             permission_classes=(IsCurrentUser, IsBlockedUser))
     def favorites(self, request, **kwargs):
@@ -105,6 +95,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(RecipeGetSerializer(recipes, many=True,
                                             context={'request': request}).data,
                         status=status.HTTP_200_OK)
+    '''
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=(IsAuthenticated, IsBlockedUser))
@@ -120,7 +111,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get'],
-            permission_classes=(IsCurrentUser, IsBlockedUser))
+            permission_classes=(IsBlockedUser))
     def download_shopping_cart(self, request):
         carts = ShoppingCart.objects.filter(user=request.user)
         content = ""
@@ -166,22 +157,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in USER_ONLY_METHODS:
-            return (IsAuthor(),)
+            return (IsAuthor(), IsBlockedUser())
         return super().get_permissions()
 
 
 class UsersViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    permission_classes = (AllowAny,)
+    permission_classes = (UserPermissions,)
     pagination_class = ResponsePaginator
     filter_backends = (DjangoFilterBackend,)
     filterset_fields = ('username', 'email')
-
-    def get_permissions(self):
-        if (self.request.method in SAFE_METHODS
-           or self.request.method == 'POST'):
-            return (AllowAny(),)
-        return (IsCurrentUserOrAdmin(), IsBlockedUser())
 
     def get_serializer_class(self):
         if self.request.method in SAFE_METHODS:
@@ -200,27 +185,31 @@ class UsersViewSet(viewsets.ModelViewSet):
         author = get_object_or_404(User, id=kwargs['pk'])
 
         if request.method == 'POST' and author != request.user:
+            if Subscription.objects.filter(user=request.user,
+                                           author=author).exists():
+                return Response(
+                    {'detail': 'Вы уже подписаны на этого автора'},
+                    status=status.HTTP_400_BAD_REQUEST)
             serializer = SubscriptionsSerializer(
                 author, data=request.data, context={"request": request})
             serializer.is_valid(raise_exception=True)
             Subscription.objects.create(user=request.user, author=author)
             return Response(serializer.data,
                             status=status.HTTP_201_CREATED)
-
-        if request.method == 'DELETE':
-            get_object_or_404(Subscription, user=request.user,
-                              author=author).delete()
+        elif author == request.user:
             return Response(
-                {'detail': 'Вы отписались от автора: ' + author.email},
-                status=status.HTTP_204_NO_CONTENT)
+                {'detail': 'Нельзя подписаться на себя'},
+                status=status.HTTP_400_BAD_REQUEST)
 
+        # Не понял, как использовать .mapping.delete
+        get_object_or_404(Subscription, user=request.user,
+                          author=author).delete()
         return Response(
-            {'detail': 'Нельзя подписаться на самого себя'},
-            status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            {'detail': 'Вы отписались от автора: ' + author.email},
+            status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=False, methods=['get'],
-            permission_classes=(IsCurrentUserOrAdmin, IsBlockedUser),
-            pagination_class=ResponsePaginator)
+            permission_classes=(IsCurrentUserOrAdmin, IsBlockedUser))
     def subscriptions(self, request):
         subscribers = User.objects.filter(
             following__user=request.user).all()

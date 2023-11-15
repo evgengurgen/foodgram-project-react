@@ -5,22 +5,22 @@ from .views import IngredientViewSet, RecipeViewSet, TagViewSet, UsersViewSet
 
 router = routers.DefaultRouter()
 router.register(
-    r'recipes',
+    'recipes',
     RecipeViewSet,
     basename='recipes'
 )
 router.register(
-    r'tags',
+    'tags',
     TagViewSet,
     basename='tags'
 )
 router.register(
-    r'ingredients',
+    'ingredients',
     IngredientViewSet,
     basename='ingredients'
 )
 router.register(
-    r'users',
+    'users',
     UsersViewSet,
     basename='users'
 )
