@@ -74,17 +74,19 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
         if (request.method == 'POST' and not Favorite.objects.filter(
                 user=request.user, recipe=recipe).exists()):
+            if Favorite.objects.filter(user=request.user,
+                                       recipe=recipe).exists():
+                return Response({'detail': 'В избранном уже есть'},
+                                status=status.HTTP_400_BAD_REQUEST)
             favorite = Favorite(user=request.user, recipe=recipe)
             favorite.save()
-            return Response(status=status.HTTP_201_CREATED)
-        elif Favorite.objects.filter(user=request.user,
-                                     recipe=recipe).exists():
-            return Response({'detail': 'В избранном уже есть'},
-                            status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Рецепт добавлен в избранное'},
+                            status=status.HTTP_201_CREATED)
         favorite = get_object_or_404(Favorite, user=request.user,
                                      recipe=recipe)
         favorite.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response({'detail': 'Рецепт удален из избранного'},
+                        status=status.HTTP_204_NO_CONTENT)
 
     # Да, лишний эндпоинт, согласно документации, но в ТЗ написано:
     # 'Пользователь может получать страницу со списком своего избранного'.

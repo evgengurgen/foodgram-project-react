@@ -204,16 +204,10 @@ class RecipeGetSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.Serializer):
-    ingredients = serializers.ListField(
-        child=serializers.DictField(
-            child=serializers.IntegerField(),
-            allow_empty=False
-        ),
-        allow_empty=False
-    )
-    tags = serializers.ListField(
-        child=serializers.IntegerField(),
-        allow_empty=False
+    ingredients = IngredientSerializer(many=True)
+    tags = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Tag.objects.all()
     )
     image = Base64ImageField()
     name = serializers.CharField()
