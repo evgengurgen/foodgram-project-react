@@ -59,7 +59,9 @@ class Command(BaseCommand):
         if not User.objects.filter(username='admin').exists():
             User.objects.create_superuser(
                 username='admin', email='admin@example.com',
-                password='adminpassword')
+                password='adminpassword', first_name='admin',
+                last_name='admin'
+            )
         self.stdout.write("[!] Учетная запись админа успешно создана.")
         if not Recipe.objects.filter(name='Рецепт админа').exists():
             admin_recipe = Recipe.objects.create(
@@ -86,7 +88,8 @@ class Command(BaseCommand):
         if not User.objects.filter(username='user').exists():
             User.objects.create_user(
                 username='user', email='user@example.com',
-                password='userpassword'
+                password='userpassword', first_name='user',
+                last_name='user'
             )
         self.stdout.write("[!] Учетная запись пользователя успешно создана.")
         if not Recipe.objects.filter(name='Рецепт пользователя').exists():

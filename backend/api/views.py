@@ -68,13 +68,18 @@ class RecipeViewSet(viewsets.ModelViewSet):
                         status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=['post', 'delete'],
-            permission_classes=(IsBlockedUser))
+            permission_classes=(IsBlockedUser,))
     def favorite(self, request, **kwargs):
         recipe = get_object_or_404(Recipe, id=kwargs['pk'])
-        if request.method == 'POST':
+        if (request.method == 'POST' and not Favorite.objects.filter(
+                user=request.user, recipe=recipe).exists()):
             favorite = Favorite(user=request.user, recipe=recipe)
             favorite.save()
             return Response(status=status.HTTP_201_CREATED)
+        elif Favorite.objects.filter(user=request.user,
+                                     recipe=recipe).exists():
+            return Response({'detail': 'В избранном уже есть'},
+                            status=status.HTTP_400_BAD_REQUEST)
         favorite = get_object_or_404(Favorite, user=request.user,
                                      recipe=recipe)
         favorite.delete()
