@@ -19,6 +19,7 @@ from .permissions import (IsAdminOrReadOnly, IsAuthor, IsBlockedUser,
                           IsCurrentUserOrAdmin, UserPermissions)
 from .serializers import (IngredientSerializer, RecipeGetSerializer,
                           RecipeSerializer, SetPasswordSerializer,
+                          RecipeActionSerializer,
                           SubscriptionsGetSerializer, SubscriptionsSerializer,
                           TagSerializer, UserGetSerializer, UserSerializer)
 
@@ -80,7 +81,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                 status=status.HTTP_400_BAD_REQUEST)
             favorite = Favorite(user=request.user, recipe=recipe)
             favorite.save()
-            return Response({'detail': 'Рецепт добавлен в избранное'},
+            serializer = RecipeActionSerializer(favorite.recipe)
+            return Response(serializer.data,
                             status=status.HTTP_201_CREATED)
         favorite = get_object_or_404(Favorite, user=request.user,
                                      recipe=recipe)
@@ -95,7 +97,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if request.method == 'POST':
             shopping_cart = ShoppingCart(user=request.user, recipe=recipe)
             shopping_cart.save()
-            return Response(status=status.HTTP_201_CREATED)
+            serializer = RecipeActionSerializer(shopping_cart.recipe)
+            return Response(serializer.data,
+                            status=status.HTTP_201_CREATED)
         shopping_cart = get_object_or_404(ShoppingCart, user=request.user,
                                           recipe=recipe)
         shopping_cart.delete()

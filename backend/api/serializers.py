@@ -149,6 +149,12 @@ class IngredientSerializer(serializers.ModelSerializer):
         fields = ('__all__')
 
 
+class RecipeActionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField(source='ingredient.id')
     name = serializers.ReadOnlyField(source='ingredient.name')
