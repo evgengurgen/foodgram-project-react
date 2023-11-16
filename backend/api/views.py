@@ -131,7 +131,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         for name, (amount, measurement_unit) in total_ingredients.items():
             content += f'{name}: {amount} {measurement_unit}\n'
 
-        file_path = f'media/recipes/{request.user.email}_shopping_cart.txt'
+        file_path = f'media/{request.user.email}_shopping_cart.txt'
         with io.open(file_path, 'w', encoding='utf-8') as file:
             file.write(content)
 
