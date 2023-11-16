@@ -35,7 +35,6 @@ class TagViewSet(viewsets.ModelViewSet):
 class IngredientViewSet(viewsets.ModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    pagination_class = ResponsePaginator
     permission_classes = (IsAdminOrReadOnly,)
 
 
