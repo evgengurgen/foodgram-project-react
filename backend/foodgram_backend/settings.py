@@ -110,13 +110,13 @@ AUTH_PASSWORD_VALIDATORS = [
 if DEBUG:
     CSRF_TRUSTED_ORIGINS = ['http://*', 'https://*']
 if not DEBUG:
-    CSRF_TRUSTED_ORIGINS = [f'http://*.{ALLOWED_HOSTS[3]}', f'https://*.{ALLOWED_HOSTS[3]}']
+    CSRF_TRUSTED_ORIGINS = [f'http://{ALLOWED_HOSTS[3]}', f'https://{ALLOWED_HOSTS[3]}']
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'collected_static'
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/media/'
+MEDIA_ROOT = '/backend_static/media/'
 
 LANGUAGE_CODE = 'ru-RU'
 
