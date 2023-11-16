@@ -2,8 +2,8 @@ from django.contrib import admin
 from django.contrib.auth.models import Group
 from rest_framework.authtoken.models import TokenProxy as Token
 
-from .models import MyUser, Subscription
 from recipes.models import Recipe
+from .models import MyUser, Subscription
 
 admin.site.unregister(Group)
 admin.site.unregister(Token)

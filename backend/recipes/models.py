@@ -1,10 +1,11 @@
 from django.contrib.auth import get_user_model
-from django.core.validators import RegexValidator, MinValueValidator
+from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 
-from foodgram_backend.constants import (MAX_TAGS_LENGTH, MAX_RECIPES_LENGTH,
+from foodgram_backend.constants import (MAX_COLOR_LENGTH,
                                         MAX_INGREDIENTS_LENGTH,
-                                        MAX_COLOR_LENGTH, MAX_MEASURE_LENGTH)
+                                        MAX_MEASURE_LENGTH, MAX_RECIPES_LENGTH,
+                                        MAX_TAGS_LENGTH)
 
 User = get_user_model()
 

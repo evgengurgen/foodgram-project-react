@@ -22,7 +22,7 @@ class UserGetSerializer(serializers.ModelSerializer):
         if (obj.is_authenticated):
             return obj.follower.filter(
                 user=obj
-                ).exists()
+            ).exists()
         return False
 
 
@@ -101,7 +101,7 @@ class SubscriptionsGetSerializer(serializers.ModelSerializer):
     def get_is_subscribed(self, obj):
         return obj.follower.filter(
             user=obj
-            ).exists()
+        ).exists()
 
 
 class SubscriptionsSerializer(serializers.ModelSerializer):

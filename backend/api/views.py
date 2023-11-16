@@ -6,16 +6,17 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import (SAFE_METHODS, IsAuthenticated)
+from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
 
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
-from users.models import Subscription, MyUser as User
+from users.models import MyUser as User
+from users.models import Subscription
 from .filters import RecipeFilter
 from .paginatiors import ResponsePaginator
-from .permissions import (IsAuthor, IsBlockedUser, UserPermissions,
-                          IsCurrentUserOrAdmin, IsAdminOrReadOnly)
+from .permissions import (IsAdminOrReadOnly, IsAuthor, IsBlockedUser,
+                          IsCurrentUserOrAdmin, UserPermissions)
 from .serializers import (IngredientSerializer, RecipeGetSerializer,
                           RecipeSerializer, SetPasswordSerializer,
                           SubscriptionsGetSerializer, SubscriptionsSerializer,
@@ -86,23 +87,6 @@ class RecipeViewSet(viewsets.ModelViewSet):
         favorite.delete()
         return Response({'detail': 'Рецепт удален из избранного'},
                         status=status.HTTP_204_NO_CONTENT)
-
-    # Да, лишний эндпоинт, согласно документации, но в ТЗ написано:
-    # 'Пользователь может получать страницу со списком своего избранного'.
-    '''
-    @action(detail=False, methods=['get'],
-            permission_classes=(IsCurrentUser, IsBlockedUser))
-    def favorites(self, request, **kwargs):
-        favorites = Favorite.objects.filter(user=request.user)
-        recipe_ids = [favorite.recipe.id for favorite in favorites]
-        if recipe_ids:
-            recipes = Recipe.objects.filter(id__in=recipe_ids)
-        else:
-            recipes = Recipe.objects.none()
-        return Response(RecipeGetSerializer(recipes, many=True,
-                                            context={'request': request}).data,
-                        status=status.HTTP_200_OK)
-    '''
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=(IsAuthenticated, IsBlockedUser))
