@@ -204,7 +204,7 @@ class RecipeGetSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.Serializer):
-    ingredients = IngredientSerializer(many=True)
+    ingredients = serializers.SerializerMethodField()
     tags = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=Tag.objects.all()
@@ -213,6 +213,14 @@ class RecipeSerializer(serializers.Serializer):
     name = serializers.CharField()
     text = serializers.CharField()
     cooking_time = serializers.IntegerField()
+
+    def get_ingredients(self, obj):
+        recipe_ingredients = RecipeIngredient.objects.filter(recipe=obj)
+        serializer = RecipeIngredientSerializer(
+            recipe_ingredients, many=True,
+            context={'recipe_id': obj.id}
+        )
+        return serializer.data
 
     class Meta:
         model = Recipe
