@@ -160,7 +160,7 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     name = serializers.ReadOnlyField(source='ingredient.name')
     measurement_unit = serializers.ReadOnlyField(
         source='ingredient.measurement_unit')
-    amount = serializers.ReadOnlyField()
+    amount = serializers.IntegerField(min_value=1)
 
     class Meta:
         model = RecipeIngredient
@@ -276,7 +276,9 @@ class RecipeSerializer(serializers.Serializer):
         return instance
 
     def to_representation(self, instance):
-        return RecipeGetSerializer(instance).data
+        return RecipeGetSerializer(
+            instance,
+            context={'request': self.context.get('request')}).data
 
 
 class SubscribersRecipeSerializer(serializers.ModelSerializer):

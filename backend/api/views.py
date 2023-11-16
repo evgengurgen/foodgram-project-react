@@ -62,12 +62,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
             is_favorited=Value(False),
             is_in_shopping_cart=Value(False))
 
-    def create(self, request, *args, **kwargs):
+    '''def create(self, request, *args, **kwargs):
         serializer = RecipeSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save(author=request.user)
         return Response(serializer.data,
-                        status=status.HTTP_201_CREATED)
+                        status=status.HTTP_201_CREATED)'''
 
     @action(detail=True, methods=['post', 'delete'],
             permission_classes=(IsBlockedUser,))
