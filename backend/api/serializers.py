@@ -221,20 +221,19 @@ class RecipeSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         ingredients_ids = []
+        ingredients_data = self.initial_data.get('ingredients')
         tags = validated_data.pop('tags')
-        ingredients_data = validated_data.pop('ingredients')
         recipe = Recipe.objects.create(**validated_data)
+        recipe.tags.set(tags)
         for ingredient_data in ingredients_data:
-            ingredient_id = ingredient_data.get('id')
-            ingredients_ids.append(ingredient_id)
-            ingredient = Ingredient.objects.get(id=ingredient_id)
+            ingredients_ids.append(ingredient_data.get('id'))
+            ingredient = Ingredient.objects.get(id=ingredient_data.get('id'))
             RecipeIngredient.objects.create(
                 recipe=recipe,
                 ingredient=ingredient,
                 amount=ingredient_data.get('amount')
             )
         recipe.ingredients.set(ingredients_ids)
-        recipe.tags.set(tags)
         return recipe
 
     def update(self, instance, validated_data):
