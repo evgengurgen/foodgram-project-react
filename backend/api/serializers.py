@@ -220,8 +220,7 @@ class RecipeSerializer(serializers.Serializer):
     )
     tags = serializers.PrimaryKeyRelatedField(
         many=True,
-        queryset=Tag.objects.all(),
-        allow_empty=False
+        queryset=Tag.objects.all()
     )
     image = Base64ImageField()
     name = serializers.CharField()
