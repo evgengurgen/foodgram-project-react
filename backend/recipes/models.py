@@ -162,8 +162,6 @@ class RecipeIngredient(models.Model):
         return (f'{self.ingredient}: {self.amount} {self.recipe}')
 
 
-# Не сделал через общий класс, потому что при создании миграций
-# были ошибки related_name
 class Favorite(models.Model):
     user = models.ForeignKey(
         User,
