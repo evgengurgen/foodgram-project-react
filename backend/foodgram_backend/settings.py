@@ -110,7 +110,7 @@ AUTH_PASSWORD_VALIDATORS = [
 if DEBUG:
     CSRF_TRUSTED_ORIGINS = ['http://*', 'https://*']
 if not DEBUG:
-    CSRF_TRUSTED_ORIGINS = [f'http://{ALLOWED_HOSTS[3]}', f'https://{ALLOWED_HOSTS[3]}']
+    CSRF_TRUSTED_ORIGINS = ['http://*.yp62.sytes.net', 'https://*.yp62.sytes.net']
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'collected_static'
@@ -126,8 +126,4 @@ USE_I18N = True
 
 USE_TZ = True
 
-STATIC_URL = 'static/'
-
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-FILE_NAME = 'shopping_list.txt'
