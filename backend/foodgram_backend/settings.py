@@ -115,8 +115,8 @@ if not DEBUG:
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'collected_static'
 
-MEDIA_URL = '/backend_static/media/'
-MEDIA_ROOT = '/backend_static/media/'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = '/media/'
 
 LANGUAGE_CODE = 'ru-RU'
 

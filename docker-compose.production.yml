@@ -3,6 +3,7 @@ version: '3'
 volumes:
   pg_data_production:
   static_volume:
+  media:
 
 services:
   db:
@@ -14,7 +15,8 @@ services:
     image: evgengurgen/foodgram_backend
     env_file: .env
     volumes:
-      - static_volume:/backend_static
+      - static_volume:/backend_static/
+      - media:/media/
   frontend:
     image: evgengurgen/foodgram_frontend
     env_file: .env
@@ -26,5 +28,6 @@ services:
     env_file: .env
     volumes:
       - static_volume:/staticfiles/
+      - media:/media/
     ports:
       - 8000:80
