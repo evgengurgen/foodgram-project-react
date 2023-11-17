@@ -176,7 +176,7 @@ class RecipeGetSerializer(serializers.ModelSerializer):
     author = UserGetSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    image = Base64ImageField()
+    image = serializers.ImageField()
 
     def get_is_favorited(self, obj):
         if (self.context.get('request')
@@ -223,7 +223,7 @@ class RecipeSerializer(serializers.Serializer):
         queryset=Tag.objects.all(),
         allow_empty=False
     )
-    image = Base64ImageField()
+    image = serializers.ImageField()
     name = serializers.CharField()
     text = serializers.CharField()
     cooking_time = serializers.IntegerField()
@@ -283,7 +283,7 @@ class RecipeSerializer(serializers.Serializer):
 
 
 class SubscribersRecipeSerializer(serializers.ModelSerializer):
-    image = Base64ImageField()
+    image = serializers.ImageField()
 
     class Meta:
         model = Recipe
