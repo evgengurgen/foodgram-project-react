@@ -110,7 +110,7 @@ AUTH_PASSWORD_VALIDATORS = [
 if DEBUG:
     CSRF_TRUSTED_ORIGINS = ['http://*', 'https://*']
 if not DEBUG:
-    CSRF_TRUSTED_ORIGINS = ['http://*.yp62.sytes.net', 'https://*.yp62.sytes.net']
+    CSRF_TRUSTED_ORIGINS = ['http://yp62.sytes.net', 'https://yp62.sytes.net']
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'collected_static'
