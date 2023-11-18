@@ -1,5 +1,5 @@
 from django.contrib.auth import get_user_model
-# from drf_base64.fields import Base64ImageField
+from drf_base64.fields import Base64ImageField
 from rest_framework import serializers
 
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
@@ -176,7 +176,6 @@ class RecipeGetSerializer(serializers.ModelSerializer):
     author = UserGetSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    image = serializers.ImageField()
 
     def get_is_favorited(self, obj):
         if (self.context.get('request')
@@ -223,7 +222,7 @@ class RecipeSerializer(serializers.Serializer):
         queryset=Tag.objects.all(),
         allow_empty=False
     )
-    image = serializers.ImageField()
+    image = Base64ImageField()
     name = serializers.CharField()
     text = serializers.CharField()
     cooking_time = serializers.IntegerField()
@@ -283,7 +282,7 @@ class RecipeSerializer(serializers.Serializer):
 
 
 class SubscribersRecipeSerializer(serializers.ModelSerializer):
-    image = serializers.ImageField()
+    image = Base64ImageField()
 
     class Meta:
         model = Recipe
