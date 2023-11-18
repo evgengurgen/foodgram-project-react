@@ -23,7 +23,6 @@ services:
     command: cp -r /app/build/. /frontend_static/
     volumes:
       - static_volume:/frontend_static
-      - ../frontend/:/app/result_build/
   gateway:
     image: evgengurgen/foodgram_gateway
     env_file: .env
