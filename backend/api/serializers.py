@@ -176,6 +176,7 @@ class RecipeGetSerializer(serializers.ModelSerializer):
     author = UserGetSerializer(read_only=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
+    image = Base64ImageField()
 
     def get_is_favorited(self, obj):
         if (self.context.get('request')
