@@ -13,7 +13,7 @@ AUTH_USER_MODEL = 'users.MyUser'
 
 DEBUG = os.getenv('DEBUG_VALUE').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS').split(', ')
+ALLOWED_HOSTS = ['yp62.sytes.net', '127.0.0.1', '158.160.81.200', 'localhost']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
